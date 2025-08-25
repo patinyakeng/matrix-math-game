@@ -134,16 +134,16 @@ function doPost(e) {
 
   <!-- LOGIN VIEW -->
   <section id="loginView" class="card">
-    <h1>Matrix Game (10 ด่าน)</h1>
-    <p>ลงชื่อก่อนเริ่มเกม ให้กรอกข้อมูลด้านล่าง แล้วกด <b>เริ่มเกม</b></p>
+    <h1>Matrix Game by คุณครูปฏิญญา มุ่งหมาย</h1>
+    <p>ลงชื่อก่อนทำแบบทดสอบ ให้กรอกข้อมูลด้านล่าง แล้วกด <b>เริ่มทำแบบทดสอบ</b></p>
     <div class="row">
       <div class="col">
         <label for="name">ชื่อ - สกุล</label>
-        <input id="name" type="text" placeholder="เช่น กมลชนก ใจดี" />
+        <input id="name" type="text" placeholder="เช่น ปฏิญญา มุ่งหมาย" />
       </div>
       <div class="col">
         <label for="room">ห้อง</label>
-        <input id="room" type="text" placeholder="เช่น ม.5/3" />
+        <input id="room" type="text" placeholder="เช่น ม.4/3" />
       </div>
       <div class="col">
         <label for="number">เลขที่</label>
@@ -151,10 +151,9 @@ function doPost(e) {
       </div>
     </div>
     <div class="actions" style="margin-top:14px">
-      <button class="btn btn-primary" id="startBtn">เริ่มเกม</button>
-      <button class="btn btn-ghost" id="fillDemo">ใส่ตัวอย่างเร็วๆ</button>
+      <button class="btn btn-primary" id="startBtn">เริ่มทำแบบทดสอบ</button>
     </div>
-    <p class="hint small">ข้อมูลผู้เล่นจะถูกเก็บไว้เฉพาะในเครื่อง (localStorage) และจะถูกส่งไปยัง Google Sheet เฉพาะเมื่อกดส่งคำตอบและตั้งค่า GAS_URL แล้วเท่านั้น</p>
+    <p class="hint small">ข้อมูลผู้ทำแบบทดสอบจะถูกเก็บไว้ และจะถูกส่งไปยัง Google Sheet เฉพาะเมื่อกดส่งคำตอบแล้วเท่านั้น</p>
   </section>
 
   <!-- QUIZ VIEW -->
@@ -182,14 +181,14 @@ function doPost(e) {
 
   <!-- END VIEW -->
   <section id="endView" class="card hidden">
-    <h1>จบเกม 🎉</h1>
+    <h1>สิ้นสุดการทำแบบทดสอบ 🎉</h1>
     <p id="scoreLine" style="font-size:18px"></p>
-    <p class="small">หมายเหตุ: แสดงเฉลยเฉพาะคำตอบ (ไม่แสดงวิธีทำ)</p>
+    <p class="small">หมายเหตุ: แสดงเฉลยเฉพาะคำตอบที่ถูกต้อง</p>
 
     <div id="answersList" class="end-grid"></div>
 
     <div class="actions" style="margin-top:16px">
-      <button class="btn btn-ghost" id="playAgain">เริ่มชุดใหม่</button>
+      <button class="btn btn-ghost" id="playAgain">เริ่มแบบทดสอบใหม่</button>
       <button class="btn btn-primary" id="backToHome">กลับหน้าแรก</button>
     </div>
 
@@ -281,12 +280,12 @@ let seed = 0; // random seed preview (not used to drive RNG by default)
 function genQ1(){ // A+B 2x3
   const A = makeMatrix(2,3); const B = makeMatrix(2,3);
   const ans = add(A,B);
-  return { id:1, kind:'matrix', prompt:'ข้อ 1) คำนวณ A + B โดย A, B ขนาด 2×3', data:{A,B}, size:{r:2,c:3}, answer:ans };
+  return { id:1, kind:'matrix', prompt:'ข้อ 1) คำนวณ A + B เมื่อกำหนดให้ A, B มิติเท่ากับ 2×3', data:{A,B}, size:{r:2,c:3}, answer:ans };
 }
 function genQ2(){ // A-B 3x3
   const A = makeMatrix(3,3); const B = makeMatrix(3,3);
   const ans = sub(A,B);
-  return { id:2, kind:'matrix', prompt:'ข้อ 2) คำนวณ A − B โดย A, B ขนาด 3×3', data:{A,B}, size:{r:3,c:3}, answer:ans };
+  return { id:2, kind:'matrix', prompt:'ข้อ 2) คำนวณ A − B เมื่อกำหนดให้ A, B มิติเท่ากับ 3×3', data:{A,B}, size:{r:3,c:3}, answer:ans };
 }
 function genQ3(){ // kA + lB 2x2
   const A = makeMatrix(2,2); const B = makeMatrix(2,2);
@@ -294,7 +293,7 @@ function genQ3(){ // kA + lB 2x2
   const l = randCoefNZ();
   const ans = add( scalar(A,k), scalar(B,l) );
   const expr = fmtLinComb(k,l);
-  return { id:3, kind:'matrix', prompt:`ข้อ 3) คำนวณ ${expr} โดย A, B ขนาด 2×2`, data:{A,B,k,l}, size:{r:2,c:2}, answer:ans };
+  return { id:3, kind:'matrix', prompt:`ข้อ 3) คำนวณ ${expr} เมื่อกำหนดให้ A, B มิติเท่ากับ 2×2`, data:{A,B,k,l}, size:{r:2,c:2}, answer:ans };
 }
 function genQ4(){ // Solve x from A=B (2x2) easy linear ax+c=y
   const base = makeMatrix(2,2);
@@ -306,24 +305,24 @@ function genQ4(){ // Solve x from A=B (2x2) easy linear ax+c=y
   const A = deepCopy(base); const B = deepCopy(base);
   A[i][j] = (a===1? 'x' : (a+'x')) + (c===0? '' : (c>0? ('+'+c) : c));
   B[i][j] = y;
-  return { id:4, kind:'solveX', prompt:'ข้อ 4) ให้ A = B (ขนาด 2×2) จงหาค่า x', data:{A,B,a,c,pos:[i,j]}, size:{r:1,c:1}, answer:xSol };
+  return { id:4, kind:'solveX', prompt:'ข้อ 4) ให้ A = B เมื่อกำหนดให้ A, B มิติเท่ากับ จงหาค่า x', data:{A,B,a,c,pos:[i,j]}, size:{r:1,c:1}, answer:xSol };
 }
 function genQ5(){ // multiply 2x2
   const A = makeMatrix(2,2); const B = makeMatrix(2,2);
   const ans = mul2x2(A,B);
-  return { id:5, kind:'matrix', prompt:'ข้อ 5) คูณเมทริกซ์ A × B โดย A, B ขนาด 2×2', data:{A,B}, size:{r:2,c:2}, answer:ans };
+  return { id:5, kind:'matrix', prompt:'ข้อ 5) คูณเมทริกซ์ A × B เมื่อกำหนดให้ A, B มิติเท่ากับ 2×2', data:{A,B}, size:{r:2,c:2}, answer:ans };
 }
 function genQ6(){ // A^T ± B (A 2x3, B 3x2)
   const A = makeMatrix(2,3); const B = makeMatrix(3,2);
   const op = Math.random()<0.5 ? '+' : '−';
   const At = transpose(A);
   const ans = op==='+' ? add(At,B) : sub(At,B);
-  return { id:6, kind:'matrix', prompt:`ข้อ 6) คำนวณ Aᵀ ${op} B (A ขนาด 2×3, B ขนาด 3×2)`, data:{A,B,op,transposeA:true}, size:{r:3,c:2}, answer:ans };
+  return { id:6, kind:'matrix', prompt:`ข้อ 6) คำนวณ Aᵀ ${op} B (A มีมิติเท่ากับ 2×3, B มีมิติเท่ากับ 3×2)`, data:{A,B,op,transposeA:true}, size:{r:3,c:2}, answer:ans };
 }
 function genQ7(){ // 2A + 3B^T (2x2)
   const A = makeMatrix(2,2); const B = makeMatrix(2,2);
   const ans = add( scalar(A,2), scalar(transpose(B),3) );
-  return { id:7, kind:'matrix', prompt:'ข้อ 7) คำนวณ 2A + 3Bᵀ โดย A, B ขนาด 2×2', data:{A,B,transposeB:true}, size:{r:2,c:2}, answer:ans };
+  return { id:7, kind:'matrix', prompt:'ข้อ 7) คำนวณ 2A + 3Bᵀ เมื่อกำหนดให้ A, B มิติเท่ากับ 2×2', data:{A,B,transposeB:true}, size:{r:2,c:2}, answer:ans };
 }
 function genQ8(){ // det 2x2
   const A = makeMatrix(2,2);
