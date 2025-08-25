@@ -585,7 +585,11 @@ async function sendToSheet({score,total,detail}){
       seed,
       details: detail
     };
-    const res = await fetch(GAS_URL, { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(payload) });
+  const res = await fetch(GAS_URL, {
+  method: 'POST',
+  headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // ตัด preflight
+  body: JSON.stringify(payload)
+});
     const js = await res.json();
     if(js && js.status==='ok') sheetMsg.innerHTML = '<span class="ok">ส่งคะแนนไปยัง Google Sheet แล้ว</span>';
     else sheetMsg.innerHTML = `<span class="warn">ส่งคะแนนไม่สำเร็จ: ${js && js.message ? js.message : 'ไม่ทราบสาเหตุ'}</span>`;
