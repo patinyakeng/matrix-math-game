@@ -357,7 +357,6 @@ const loginView = document.getElementById('loginView');
 const quizView  = document.getElementById('quizView');
 const endView   = document.getElementById('endView');
 const startBtn  = document.getElementById('startBtn');
-const fillDemo  = document.getElementById('fillDemo');
 const studentTag= document.getElementById('studentTag');
 const seedTag   = document.getElementById('seedTag');
 const navGrid   = document.getElementById('navGrid');
@@ -507,12 +506,6 @@ startBtn.addEventListener('click', ()=>{
   seed = Date.now() % 1000000;
   generateAllQuestions();
   enterQuiz();
-});
-
-fillDemo.addEventListener('click', ()=>{
-  document.getElementById('name').value = 'นักเรียนตัวอย่าง';
-  document.getElementById('room').value = 'ม.4/1';
-  document.getElementById('number').value = '15';
 });
 
 backBtn.addEventListener('click', ()=>{ currentIndex = clamp(currentIndex-1,0,9); renderQuestion(); updateNavState(); });
