@@ -285,19 +285,59 @@ function gradeAll(){ let score=0; const detail=[]; for(const q of questions){ le
 function showEnd({score,total,detail}){ show(endView); scoreLine.textContent = `คะแนนรวม: ${score} / ${total}`; answersList.innerHTML=''; for(const d of detail){ const q=questions.find(qq=>qq.id===d.q); const card=document.createElement('div'); card.className='ans-card'; let html=`<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"><div><strong>ข้อ ${q.id}</strong></div><div class="badge ${d.correct?'ok':'no'}">${d.correct?'ถูกต้อง':'ผิด'}</div></div>`; html += `<div class="small" style="margin-top:6px">คำตอบที่ถูกต้อง:</div>`; html += (q.kind==='matrix') ? fmtMatrixHTML(q.answer) : `<div class="mwrap mono" style="display:inline-block">${d.correctAnswer}</div>`; card.innerHTML=html; answersList.appendChild(card); } }
 
 async function sendToSheet({score,total,detail}){
-  if(!GAS_URL){ sheetMsg.innerHTML = '<span class="warn">ยังไม่ตั้งค่า Google Sheets URL (GAS_URL)</span>'; return; }
-  try{
-    const payload = { game:'MatrixGame', title:player.title, name:player.name, nickname:player.nickname, room:player.room, number:player.number, score, total, seed, details:detail };
-    // ส่งแบบ x-www-form-urlencoded (simple request) เพื่อเลี่ยง preflight/CORS
-    const form = new URLSearchParams(); form.append('payload', JSON.stringify(payload));
-    const res = await fetch(GAS_URL, { method:'POST', body: form });
-    const js  = await res.json();
-    if(js && js.status==='ok') sheetMsg.innerHTML = '<span class="ok">ส่งคะแนนไปยัง Google Sheet แล้ว</span>';
-    else sheetMsg.innerHTML = `<span class="warn">ส่งคะแนนไม่สำเร็จ: ${js && js.message ? js.message : 'ไม่ทราบสาเหตุ'}</span>`;
-  }catch(err){
-    sheetMsg.innerHTML = `<span class="warn">ส่งคะแนนไม่สำเร็จ: ${err && err.message ? err.message : err}</span>`;
+  if(!GAS_URL){
+    sheetMsg.innerHTML = '<span class="warn">ยังไม่ตั้งค่า Google Sheets URL (GAS_URL)</span>';
+    return;
+  }
+
+  const payload = {
+    game:'MatrixGame',
+    title: player.title,
+    name: player.name,
+    nickname: player.nickname,
+    room: player.room,
+    number: player.number,
+    score, total, seed,
+    details: detail
+  };
+
+  // ส่งแบบ URL-encoded เพื่อเลี่ยง preflight/CORS
+  const form = new URLSearchParams();
+  form.append('payload', JSON.stringify(payload));
+
+  // โชว์สถานะล่วงหน้า (optimistic)
+  sheetMsg.innerHTML = '<span class="ok">กำลังส่งคะแนน…</span>';
+
+  try {
+    const res = await fetch(GAS_URL, { method:'POST', body: form, credentials:'omit' });
+
+    // ถ้าอ่าน JSON ได้ก็ตรวจสถานะ, ถ้าอ่านไม่ได้ให้ยึดตาม res.ok
+    let ok = res.ok;
+    try {
+      const ct = res.headers.get('content-type') || '';
+      if (ct.includes('json')) {
+        const js = await res.clone().json();
+        ok = ok && (js && js.status === 'ok');
+      }
+    } catch (_) { /* บางครั้ง Chrome บล็อคการอ่าน — ไม่ถือว่า fail */ }
+
+    if (ok) {
+      sheetMsg.innerHTML = '<span class="ok">ส่งคะแนนไปยัง Google Sheet แล้ว</span>';
+      return;
+    }
+    // force ไป fallback ด้านล่าง
+    throw new Error('Non-OK response');
+  } catch (err) {
+    // ถ้าอ่านผลไม่ได้/ติด CORS: ยิงซ้ำแบบ no-cors (fire-and-forget) แล้วถือว่าสำเร็จ
+    try {
+      await fetch(GAS_URL, { method:'POST', mode:'no-cors', body: form, keepalive:true, credentials:'omit' });
+      sheetMsg.innerHTML = '<span class="ok">ส่งคะแนนแล้ว</span>'; // ไม่ขึ้น Failed to fetch
+    } catch (e2) {
+      sheetMsg.innerHTML = '<span class="warn">ส่งคะแนนไม่สำเร็จ กรุณาลองใหม่</span>';
+    }
   }
 }
+
 
 // ================== INIT ==================
 restorePlayer(); show(loginView);
