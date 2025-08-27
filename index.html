@@ -271,7 +271,11 @@ startBtn.addEventListener('click', ()=>{
 });
 backBtn.addEventListener('click', ()=>{ currentIndex = clamp(currentIndex-1,0,9); renderQuestion(); updateNavState(); });
 nextBtn.addEventListener('click', ()=>{ currentIndex = clamp(currentIndex+1,0,9); renderQuestion(); updateNavState(); });
-submitBtn.addEventListener('click', ()=>{ const results = gradeAll(); showEnd(results); (results); });
+submitBtn.addEventListener('click', ()=>{
+  const results = gradeAll();
+  showEnd(results);
+  sendToSheet(results);   // <- เรียกฟังก์ชันส่งคะแนน
+});
 playAgain.addEventListener('click', ()=>{ generateAllQuestions(); currentIndex=0; show(quizView); renderQuestion(); setupNav(); refreshSubmitState(); updateNavState(); });
 backToHome.addEventListener('click', ()=>{ show(loginView); });
 
