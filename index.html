@@ -283,6 +283,7 @@ function enterQuiz(){
 }
 function gradeAll(){ let score=0; const detail=[]; for(const q of questions){ let correct=false,correctAnsStr='',userAnsStr=''; if(q.kind==='matrix'){ correct=matEq(q.userAnswer,q.answer); correctAnsStr=fmtAnswerMatrixAsText(q.answer); userAnsStr=fmtAnswerMatrixAsText(q.userAnswer); } else { const userVal=Number(q.userAnswer); correct=(userVal===Number(q.answer)); correctAnsStr=String(q.answer); userAnsStr=String(userVal); } if(correct) score++; detail.push({ q:q.id, correct, correctAnswer:correctAnsStr, userAnswer:userAnsStr }); } return { score, total:questions.length, detail }; }
 function showEnd({score,total,detail}){ show(endView); scoreLine.textContent = `คะแนนรวม: ${score} / ${total}`; answersList.innerHTML=''; for(const d of detail){ const q=questions.find(qq=>qq.id===d.q); const card=document.createElement('div'); card.className='ans-card'; let html=`<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"><div><strong>ข้อ ${q.id}</strong></div><div class="badge ${d.correct?'ok':'no'}">${d.correct?'ถูกต้อง':'ผิด'}</div></div>`; html += `<div class="small" style="margin-top:6px">คำตอบที่ถูกต้อง:</div>`; html += (q.kind==='matrix') ? fmtMatrixHTML(q.answer) : `<div class="mwrap mono" style="display:inline-block">${d.correctAnswer}</div>`; card.innerHTML=html; answersList.appendChild(card); } }
+</script>
 
 <script>
 async function sendToSheet({score,total,detail}){
