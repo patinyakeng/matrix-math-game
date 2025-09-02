@@ -2,13 +2,7 @@
 Matrix Game (Single-File) — HTML/CSS/JS (Light iOS Theme)
 Author: Alex (for Patinya/Tin)
 
-- Light iOS-like theme
-- 10 ข้อ, ข้ามไปมาได้, ส่งได้เมื่อครบทุกข้อ
-- ข้อ 3 และ 10 ใช้ค่าสัมประสิทธิ์สุ่มในช่วง {-3,-2,-1,1,2,3}
-- เฉลยแสดงเฉพาะ “คำตอบสุดท้าย”
-- ส่งคะแนนไป Google Sheets ผ่าน Apps Script (GAS_URL)
-
-วิธีเชื่อม Google Sheets: ใช้ Code.gs ด้านล่าง (Web App, Anyone, /exec)
+เวอร์ชัน "แบบฝึกหัด" (นักเรียนกรอกคำตอบ ส่งขึ้น Google Sheet)
 -->
 <!DOCTYPE html>
 <html lang="th">
@@ -43,15 +37,44 @@ Author: Alex (for Patinya/Tin)
     .qbtn.current{outline:2px solid var(--accent);background:#dbeafe;color:#007aff}
     .qbtn.answered{background:#ecfdf5;border-color:#bbf7d0;color:#166534}
     .problem{display:flex;flex-direction:column;gap:12px}
-    .mwrap{display:inline-block;border:1px solid var(--border);border-radius:10px;padding:10px;background:#f9fafb}
-    table.matrix{border-collapse:collapse} table.matrix td{border:1px solid #cbd5e1;padding:6px 10px;text-align:center;min-width:32px}
-    .mx{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
-    .answer-inputs{display:inline-block} .grid-input{display:grid;gap:6px}
+
+    /* กรอบ matrix */
+    .mwrap{display:inline-block;border:1px solid var(--border);border-radius:12px;padding:12px;background:#f9fafb}
+    table.matrix{border-collapse:collapse}
+    table.matrix td{border:1px solid #cbd5e1;padding:6px 10px;text-align:center;min-width:32px;font-weight:600}
+
+    /* แถว A/B แนวนอน */
+    .mx-row{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+    .badge{font-size:14px;padding:4px 10px;border-radius:999px;border:1px solid var(--border);color:var(--muted);background:#fff}
+
+    /* กล่องคำตอบ (ใช้สีเดียวกับหน้าเฉลย) */
+    .answer{
+      display:inline-block;
+      background:#eef2ff;               /* ฟ้าอ่อน (เมทริกซ์) */
+      border:2px solid var(--accent);
+      border-radius:14px;
+      padding:12px;
+    }
+    .answer-num{
+      background:#ecfdf5;               /* เขียวอ่อน (ตัวเลข) */
+      border-color:var(--good);
+    }
+
+    /* input ในกล่องคำตอบ */
+    .grid-input{display:grid;gap:8px}
+    .answer .grid-input input{
+      width:66px;height:46px;text-align:center;font-weight:700;
+      border:1px solid #cbd5e1;border-radius:10px;
+    }
+    .answer.answer-num input{
+      width:180px;height:52px;text-align:center;font-size:22px;font-weight:800;
+      border:1px solid #cbd5e1;border-radius:12px;
+    }
+
     .status{margin-top:8px;color:var(--muted)}
     .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
     .end-grid{display:grid;grid-template-columns:1fr;gap:14px}
     .ans-card{border:1px solid var(--border);border-radius:12px;padding:14px;background:#f9fafb}
-    .badge{font-size:12px;padding:2px 8px;border-radius:999px;border:1px solid var(--border);color:var(--muted)}
     .hint{font-size:13px;color:var(--muted)} .ok{color:var(--good)} .no{color:var(--bad)} .warn{color:var(--warn)} .hidden{display:none} .small{font-size:12px}
     .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;}
   </style>
@@ -126,7 +149,7 @@ Author: Alex (for Patinya/Tin)
   <section id="endView" class="card hidden">
     <h1>สิ้นสุดการทำแบบทดสอบ 🎉</h1>
     <p id="scoreLine" style="font-size:18px"></p>
-    <p class="small">หมายเหตุ: แสดงเฉลยเฉพาะคำตอบที่ถูกต้อง</p>
+    <p class="small">เฉลยด้านล่างจะแสดง “โจทย์เต็ม” พร้อม “คำตอบสุดท้าย”</p>
 
     <div id="answersList" class="end-grid"></div>
 
@@ -174,16 +197,16 @@ let currentIndex = 0;
 let seed = 0;
 
 // ================== QUESTION GENERATORS ==================
-function genQ1(){ const A = makeMatrix(2,3); const B = makeMatrix(2,3); const ans = add(A,B); return { id:1, kind:'matrix', prompt:'ข้อ 1) จงหาเมทริกซ์ A + B ', data:{A,B}, size:{r:2,c:3}, answer:ans }; }
-function genQ2(){ const A = makeMatrix(3,3); const B = makeMatrix(3,3); const ans = sub(A,B); return { id:2, kind:'matrix', prompt:'ข้อ 2) จงหาเมทริกซ์ A − B ', data:{A,B}, size:{r:3,c:3}, answer:ans }; }
-function genQ3(){ const A = makeMatrix(2,2); const B = makeMatrix(2,2); const k=randCoefNZ(), l=randCoefNZ(); const ans = add( scalar(A,k), scalar(B,l) ); const expr = fmtLinComb(k,l); return { id:3, kind:'matrix', prompt:`ข้อ 3) จงหาเมทริกซ์ ${expr} `, data:{A,B,k,l}, size:{r:2,c:2}, answer:ans }; }
+function genQ1(){ const A = makeMatrix(2,3); const B = makeMatrix(2,3); const ans = add(A,B); return { id:1, kind:'matrix', prompt:'ข้อ 1) จงหาเมทริกซ์ A + B', data:{A,B}, size:{r:2,c:3}, answer:ans }; }
+function genQ2(){ const A = makeMatrix(3,3); const B = makeMatrix(3,3); const ans = sub(A,B); return { id:2, kind:'matrix', prompt:'ข้อ 2) จงหาเมทริกซ์ A − B', data:{A,B}, size:{r:3,c:3}, answer:ans }; }
+function genQ3(){ const A = makeMatrix(2,2); const B = makeMatrix(2,2); const k=randCoefNZ(), l=randCoefNZ(); const ans = add( scalar(A,k), scalar(B,l) ); const expr = fmtLinComb(k,l); return { id:3, kind:'matrix', prompt:`ข้อ 3) จงหาเมทริกซ์ ${expr}`, data:{A,B,k,l}, size:{r:2,c:2}, answer:ans }; }
 function genQ4(){ const base = makeMatrix(2,2); const i=randInt(0,1), j=randInt(0,1); const a=randInt(1,3), c=randInt(-5,5), xSol=randInt(-5,5), y=a*xSol+c; const A=deepCopy(base), B=deepCopy(base); A[i][j]=(a===1? 'x':(a+'x'))+(c===0?'':(c>0?('+'+c):c)); B[i][j]=y; return { id:4, kind:'solveX', prompt:'ข้อ 4) ให้เมทริกซ์  A = B จงหาค่าของ x', data:{A,B,a,c,pos:[i,j]}, size:{r:1,c:1}, answer:xSol }; }
-function genQ5(){ const A = makeMatrix(2,2); const B = makeMatrix(2,2); const ans = mul2x2(A,B); return { id:5, kind:'matrix', prompt:'ข้อ 5) จงหาเมทริกซ์ A × B ', data:{A,B}, size:{r:2,c:2}, answer:ans }; }
-function genQ6(){ const A=makeMatrix(2,3), B=makeMatrix(3,2); const op=Math.random()<0.5?'+':'−'; const At=transpose(A); const ans = op==='+'? add(At,B): sub(At,B); return { id:6, kind:'matrix', prompt:`ข้อ 6) จงหาเมทริกซ์ Aᵀ ${op} B `, data:{A,B,op,transposeA:true}, size:{r:3,c:2}, answer:ans }; }
-function genQ7(){ const A = makeMatrix(2,2); const B = makeMatrix(2,2); const ans = add( scalar(A,2), scalar(transpose(B),3) ); return { id:7, kind:'matrix', prompt:'ข้อ 7) จงหาเมทริกซ์ 2A + 3Bᵀ ', data:{A,B,transposeB:true}, size:{r:2,c:2}, answer:ans }; }
-function genQ8(){ const A = makeMatrix(2,2); const ans = det2x2(A); return { id:8, kind:'number', prompt:'ข้อ 8) จงหา det(A) ', data:{A}, size:{r:1,c:1}, answer:ans }; }
-function genQ9(){ const A = makeMatrix(3,3); const ans = det3x3(A); return { id:9, kind:'number', prompt:'ข้อ 9) จงหา det(A) ', data:{A}, size:{r:1,c:1}, answer:ans }; }
-function genQ10(){ const A=makeMatrix(2,2), B=makeMatrix(2,2); const k=randCoefNZ(), l=randCoefNZ(); const C=add( scalar(A,k), scalar(B,l) ); const ans=det2x2(C); const expr=fmtLinComb(k,l); return { id:10, kind:'number', prompt:`ข้อ 10) จงหา det ของ  ${expr} `, data:{A,B,k,l}, size:{r:1,c:1}, answer:ans }; }
+function genQ5(){ const A = makeMatrix(2,2); const B = makeMatrix(2,2); const ans = mul2x2(A,B); return { id:5, kind:'matrix', prompt:'ข้อ 5) จงหาเมทริกซ์ A × B', data:{A,B}, size:{r:2,c:2}, answer:ans }; }
+function genQ6(){ const A=makeMatrix(2,3), B=makeMatrix(3,2); const op=Math.random()<0.5?'+':'−'; const At=transpose(A); const ans = op==='+'? add(At,B): sub(At,B); return { id:6, kind:'matrix', prompt:`ข้อ 6) จงหาเมทริกซ์ Aᵀ ${op} B`, data:{A,B,op,transposeA:true}, size:{r:3,c:2}, answer:ans }; }
+function genQ7(){ const A = makeMatrix(2,2); const B = makeMatrix(2,2); const ans = add( scalar(A,2), scalar(transpose(B),3) ); return { id:7, kind:'matrix', prompt:'ข้อ 7) จงหาเมทริกซ์ 2A + 3Bᵀ', data:{A,B,transposeB:true}, size:{r:2,c:2}, answer:ans }; }
+function genQ8(){ const A = makeMatrix(2,2); const ans = det2x2(A); return { id:8, kind:'number', prompt:'ข้อ 8) จงหา det(A)', data:{A}, size:{r:1,c:1}, answer:ans }; }
+function genQ9(){ const A = makeMatrix(3,3); const ans = det3x3(A); return { id:9, kind:'number', prompt:'ข้อ 9) จงหา det(A)', data:{A}, size:{r:1,c:1}, answer:ans }; }
+function genQ10(){ const A=makeMatrix(2,2), B=makeMatrix(2,2); const k=randCoefNZ(), l=randCoefNZ(); const C=add( scalar(A,k), scalar(B,l) ); const ans=det2x2(C); const expr=fmtLinComb(k,l); return { id:10, kind:'number', prompt:`ข้อ 10) จงหา det ของ ${expr}`, data:{A,B,k,l}, size:{r:1,c:1}, answer:ans }; }
 
 function generateAllQuestions(){
   questions = [genQ1(),genQ2(),genQ3(),genQ4(),genQ5(),genQ6(),genQ7(),genQ8(),genQ9(),genQ10()];
@@ -209,7 +232,25 @@ const sheetMsg = document.getElementById('sheetMsg');
 const playAgain = document.getElementById('playAgain');
 const backToHome = document.getElementById('backToHome');
 
-function show(view){ loginView.classList.add('hidden'); quizView.classList.add('hidden'); endView.classList.add('hidden'); view.classList.remove('hidden'); }
+function show(view){
+  loginView.classList.add('hidden'); quizView.classList.add('hidden'); endView.classList.add('hidden');
+  view.classList.remove('hidden');
+}
+
+/* แสดง A/B แนวนอน (ใช้ซ้ำทั้งหน้าโจทย์และเฉลย) */
+function renderQuestionBody(q){
+  let html = '';
+  if(q.data){
+    const A=q.data.A, B=q.data.B;
+    if(A || B){
+      html += '<div class="mx-row">';
+      if(A) html += `<span class="badge">A</span>${fmtMatrixHTML(A)}`;
+      if(B) html += ` <span class="badge">B</span>${fmtMatrixHTML(B)}`;
+      html += '</div>';
+    }
+  }
+  return html;
+}
 
 function restorePlayer(){
   try{ const raw = localStorage.getItem(LS_KEY); if(raw){ const obj = JSON.parse(raw); if(obj && obj.name){ player = obj; } } }catch(e){}
@@ -223,7 +264,12 @@ function savePlayer(){ localStorage.setItem(LS_KEY, JSON.stringify(player)); }
 
 function setupNav(){
   navGrid.innerHTML = '';
-  for(let i=0;i<10;i++){ const b=document.createElement('button'); b.className='qbtn'; b.textContent=(i+1); b.addEventListener('click', ()=>{ currentIndex=i; renderQuestion(); updateNavState(); }); navGrid.appendChild(b); }
+  for(let i=0;i<10;i++){
+    const b=document.createElement('button');
+    b.className='qbtn'; b.textContent=(i+1);
+    b.addEventListener('click', ()=>{ currentIndex=i; renderQuestion(); updateNavState(); });
+    navGrid.appendChild(b);
+  }
   updateNavState();
 }
 function updateNavState(){
@@ -238,25 +284,65 @@ function matrixFilled(M){ for(let i=0;i<M.length;i++) for(let j=0;j<M[0].length;
 function renderQuestion(){
   const q = questions[currentIndex];
   let body = `<div><strong>${q.prompt}</strong></div>`;
-  if(q.data){ if(q.data.A){ body += `<div class="mx"><span class="badge">A</span>${fmtMatrixHTML(q.data.A)}</div>`; }
-              if(q.data.B){ body += `<div class="mx"><span class="badge">B</span>${fmtMatrixHTML(q.data.B)}</div>`; } }
-  body += '<div class="answer-inputs">';
-  if(q.kind==='matrix') body += renderMatrixInputs(q); else if(q.kind==='number') body += renderNumberInput(q); else body += renderSolveXInput(q);
-  body += '</div><div class="actions"><button class="btn btn-ghost" id="clearBtn">ล้างคำตอบข้อนี้</button></div>';
+  body += renderQuestionBody(q);                          // A/B แนวนอน
+
+  // กล่องคำตอบ (สีฟ้า = เมทริกซ์, สีเขียว = ตัวเลข)
+  const ansClass = q.kind==='matrix' ? 'answer' : 'answer answer-num';
+  body += `<div class="${ansClass}">`;
+  if(q.kind==='matrix') body += renderMatrixInputs(q);
+  else if(q.kind==='number') body += renderNumberInput(q);
+  else body += renderSolveXInput(q);
+  body += `</div>`;
+
+  body += '<div class="actions"><button class="btn btn-ghost" id="clearBtn">ล้างคำตอบข้อนี้</button></div>';
   problemArea.innerHTML = body;
-  document.getElementById('clearBtn').addEventListener('click', ()=>{ clearCurrentAnswer(); renderQuestion(); refreshSubmitState(); updateNavState(); });
-  if(q.kind==='matrix') attachMatrixInputHandlers(q); if(q.kind!=='matrix') attachNumberHandler(q);
+
+  document.getElementById('clearBtn').addEventListener('click', ()=>{
+    clearCurrentAnswer(); renderQuestion(); refreshSubmitState(); updateNavState();
+  });
+  if(q.kind==='matrix') attachMatrixInputHandlers(q);
+  if(q.kind!=='matrix') attachNumberHandler(q);
+
   statusLine.textContent = `ข้อ ${q.id} จาก 10`;
 }
-function renderMatrixInputs(q){ const r=q.size.r,c=q.size.c; let html = `<div class="grid-input" style="grid-template-columns: repeat(${c}, minmax(42px, 64px));">`;
-  for(let i=0;i<r;i++) for(let j=0;j<c;j++){ const val = q.userAnswer[i][j]!==''? q.userAnswer[i][j] : ''; html += `<input type="number" class="minput" data-i="${i}" data-j="${j}" value="${val}" />`; }
-  return html + '</div>'; }
-function attachMatrixInputHandlers(q){ problemArea.querySelectorAll('input.minput').forEach(inp=>{ inp.addEventListener('input', ()=>{ const i=Number(inp.getAttribute('data-i')), j=Number(inp.getAttribute('data-j')); q.userAnswer[i][j]=inp.value; refreshSubmitState(); updateNavState(); }); }); }
-function renderNumberInput(q){ const v=(q.userAnswer!=='' && q.userAnswer!==null)? q.userAnswer:''; return `<input type="number" id="ninput" placeholder="พิมพ์คำตอบเป็นจำนวนเต็ม" value="${v}" />`; }
-function renderSolveXInput(q){ const v=(q.userAnswer!=='' && q.userAnswer!==null)? q.userAnswer:''; return `<div class="row"><div class="col" style="max-width:260px"><label>จงหาค่า x (จำนวนเต็ม)</label><input type="number" id="ninput" placeholder="ค่า x" value="${v}" /></div></div>`; }
-function attachNumberHandler(q){ const inp=document.getElementById('ninput'); inp.addEventListener('input', ()=>{ q.userAnswer = inp.value; refreshSubmitState(); updateNavState(); }); }
-function clearCurrentAnswer(){ const q=questions[currentIndex]; if(q.kind==='matrix') q.userAnswer=makeMatrix(q.size.r,q.size.c,()=>'' ); else q.userAnswer=''; }
-function refreshSubmitState(){ const allDone = questions.every(q=> q.kind==='matrix' ? matrixFilled(q.userAnswer) : (q.userAnswer!=='' && q.userAnswer!==null) ); submitBtn.disabled=!allDone; }
+function renderMatrixInputs(q){
+  const r=q.size.r,c=q.size.c;
+  let html = `<div class="grid-input" style="grid-template-columns: repeat(${c}, minmax(42px, 72px));">`;
+  for(let i=0;i<r;i++) for(let j=0;j<c;j++){
+    const val = q.userAnswer[i][j]!==''? q.userAnswer[i][j] : '';
+    html += `<input type="number" class="minput" data-i="${i}" data-j="${j}" value="${val}" />`;
+  }
+  return html + '</div>';
+}
+function attachMatrixInputHandlers(q){
+  problemArea.querySelectorAll('input.minput').forEach(inp=>{
+    inp.addEventListener('input', ()=>{
+      const i=Number(inp.getAttribute('data-i')), j=Number(inp.getAttribute('data-j'));
+      q.userAnswer[i][j]=inp.value; refreshSubmitState(); updateNavState();
+    });
+  });
+}
+function renderNumberInput(q){
+  const v=(q.userAnswer!=='' && q.userAnswer!==null)? q.userAnswer:'';
+  return `<input type="number" id="ninput" placeholder="พิมพ์คำตอบเป็นจำนวนเต็ม" value="${v}" />`;
+}
+function renderSolveXInput(q){
+  const v=(q.userAnswer!=='' && q.userAnswer!==null)? q.userAnswer:'';
+  return `<input type="number" id="ninput" placeholder="ค่า x" value="${v}" />`;
+}
+function attachNumberHandler(q){
+  const inp=document.getElementById('ninput');
+  inp.addEventListener('input', ()=>{ q.userAnswer = inp.value; refreshSubmitState(); updateNavState(); });
+}
+function clearCurrentAnswer(){
+  const q=questions[currentIndex];
+  if(q.kind==='matrix') q.userAnswer=makeMatrix(q.size.r,q.size.c,()=>'' );
+  else q.userAnswer='';
+}
+function refreshSubmitState(){
+  const allDone = questions.every(q=> q.kind==='matrix' ? matrixFilled(q.userAnswer) : (q.userAnswer!=='' && q.userAnswer!==null) );
+  submitBtn.disabled=!allDone;
+}
 
 // ================== GAME FLOW ==================
 startBtn.addEventListener('click', ()=>{
@@ -274,7 +360,7 @@ nextBtn.addEventListener('click', ()=>{ currentIndex = clamp(currentIndex+1,0,9)
 submitBtn.addEventListener('click', ()=>{
   const results = gradeAll();
   showEnd(results);
-  sendToSheet(results);   // <- เรียกฟังก์ชันส่งคะแนน
+  sendToSheet(results);
 });
 playAgain.addEventListener('click', ()=>{ generateAllQuestions(); currentIndex=0; show(quizView); renderQuestion(); setupNav(); refreshSubmitState(); updateNavState(); });
 backToHome.addEventListener('click', ()=>{ show(loginView); });
@@ -285,11 +371,54 @@ function enterQuiz(){
   seedTag.textContent = `ชุดโจทย์: ${seed}`;
   currentIndex = 0; show(quizView); renderQuestion(); setupNav(); refreshSubmitState();
 }
-function gradeAll(){ let score=0; const detail=[]; for(const q of questions){ let correct=false,correctAnsStr='',userAnsStr=''; if(q.kind==='matrix'){ correct=matEq(q.userAnswer,q.answer); correctAnsStr=fmtAnswerMatrixAsText(q.answer); userAnsStr=fmtAnswerMatrixAsText(q.userAnswer); } else { const userVal=Number(q.userAnswer); correct=(userVal===Number(q.answer)); correctAnsStr=String(q.answer); userAnsStr=String(userVal); } if(correct) score++; detail.push({ q:q.id, correct, correctAnswer:correctAnsStr, userAnswer:userAnsStr }); } return { score, total:questions.length, detail }; }
-function showEnd({score,total,detail}){ show(endView); scoreLine.textContent = `คะแนนรวม: ${score} / ${total}`; answersList.innerHTML=''; for(const d of detail){ const q=questions.find(qq=>qq.id===d.q); const card=document.createElement('div'); card.className='ans-card'; let html=`<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"><div><strong>ข้อ ${q.id}</strong></div><div class="badge ${d.correct?'ok':'no'}">${d.correct?'ถูกต้อง':'ผิด'}</div></div>`; html += `<div class="small" style="margin-top:6px">คำตอบที่ถูกต้อง:</div>`; html += (q.kind==='matrix') ? fmtMatrixHTML(q.answer) : `<div class="mwrap mono" style="display:inline-block">${d.correctAnswer}</div>`; card.innerHTML=html; answersList.appendChild(card); } }
+
+function gradeAll(){
+  let score=0; const detail=[];
+  for(const q of questions){
+    let correct=false,correctAnsStr='',userAnsStr='';
+    if(q.kind==='matrix'){
+      correct=matEq(q.userAnswer,q.answer);
+      correctAnsStr=fmtAnswerMatrixAsText(q.answer);
+      userAnsStr=fmtAnswerMatrixAsText(q.userAnswer);
+    } else {
+      const userVal=Number(q.userAnswer);
+      correct=(userVal===Number(q.answer));
+      correctAnsStr=String(q.answer);
+      userAnsStr=String(userVal);
+    }
+    if(correct) score++;
+    detail.push({ q:q.id, correct, correctAnswer:correctAnsStr, userAnswer:userAnsStr });
+  }
+  return { score, total:questions.length, detail };
+}
+
+/* เฉลยแบบ “โจทย์เต็ม + คำตอบสีไฮไลต์” */
+function showEnd({score,total,detail}){
+  show(endView);
+  scoreLine.textContent = `คะแนนรวม: ${score} / ${total}`;
+  answersList.innerHTML='';
+  for(const d of detail){
+    const q=questions.find(qq=>qq.id===d.q);
+    const card=document.createElement('div'); card.className='ans-card';
+    let html=`<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+                <div><strong>ข้อ ${q.id}</strong></div>
+                <div class="badge ${d.correct?'ok':'no'}">${d.correct?'ถูกต้อง':'ผิด'}</div>
+              </div>`;
+    html += `<div class="small" style="margin-top:6px"><b>โจทย์:</b> ${q.prompt}</div>`;
+    html += renderQuestionBody(q);
+    html += `<div class="small" style="margin-top:8px">คำตอบ:</div>`;
+    if(q.kind==='matrix'){
+      html += `<div class="answer">${fmtMatrixHTML(q.answer)}</div>`;
+    }else{
+      html += `<div class="answer answer-num">${q.answer}</div>`;
+    }
+    card.innerHTML=html; answersList.appendChild(card);
+  }
+}
 </script>
 
 <script>
+/* ===== ส่งคะแนนไป Google Sheet ===== */
 async function sendToSheet({score,total,detail}){
   if(!GAS_URL){
     sheetMsg.innerHTML = '<span class="warn">ยังไม่ตั้งค่า Google Sheets URL (GAS_URL)</span>';
@@ -304,10 +433,8 @@ async function sendToSheet({score,total,detail}){
     room: player.room,
     number: player.number,
     score, total, seed
-    // ไม่มี details แล้ว
   };
 
-  // ส่งแบบ URL-encoded เลี่ยง preflight/CORS
   const form = new URLSearchParams();
   form.append('payload', JSON.stringify(payload));
 
@@ -315,7 +442,6 @@ async function sendToSheet({score,total,detail}){
 
   try {
     const res = await fetch(GAS_URL, { method:'POST', body: form, credentials:'omit' });
-
     let ok = res.ok;
     try {
       const ct = res.headers.get('content-type') || '';
@@ -325,13 +451,9 @@ async function sendToSheet({score,total,detail}){
       }
     } catch (_) {}
 
-    if (ok) {
-      sheetMsg.innerHTML = '<span class="ok">ส่งคะแนนไปยัง Google Sheet แล้ว</span>';
-      return;
-    }
+    if (ok) { sheetMsg.innerHTML = '<span class="ok">ส่งคะแนนไปยัง Google Sheet แล้ว</span>'; return; }
     throw new Error('Non-OK response');
   } catch (err) {
-    // fallback ยิงแบบ no-cors ให้พ้น error UI
     try {
       await fetch(GAS_URL, { method:'POST', mode:'no-cors', body: form, keepalive:true, credentials:'omit' });
       sheetMsg.innerHTML = '<span class="ok">ส่งคะแนนแล้ว</span>';
