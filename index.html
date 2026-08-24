@@ -96,8 +96,12 @@ Author: Alex (for Patinya/Tin)
         </select>
       </div>
       <div class="col">
-        <label for="name">ชื่อ - สกุล</label>
-        <input id="name" type="text" placeholder="เช่น ปฏิญญา มุ่งหมาย" />
+        <label for="firstName">ชื่อจริง</label>
+        <input id="firstName" type="text" autocomplete="given-name" />
+      </div>
+      <div class="col">
+        <label for="lastName">นามสกุล</label>
+        <input id="lastName" type="text" autocomplete="family-name" />
       </div>
       <div class="col">
         <label for="nickname">ชื่อเล่น</label>
@@ -163,7 +167,7 @@ Author: Alex (for Patinya/Tin)
 </div>
 <script>
 // ================== CONFIG ==================
-const GAS_URL = "https://script.google.com/macros/s/AKfycbxORXGP88RwjAZdQ4jR3xADaSl_jwXmSWFCcvONIrt5bQ-gRXM8QFrrAN1yyGDRSATW_Q/exec";
+const GAS_URL = "https://script.google.com/macros/s/AKfycbzpuY5hvk61W42K1BnOWcQ1vuanH0K1exyZfXMqtyqZDpmjn5JovhxNxFKYWk-tdVwX/exec";
 
 // ================== UTILITIES ==================
 const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
@@ -189,8 +193,8 @@ function fmtCoefTerm(k, sym){ if(k===1) return sym; if(k===-1) return '−'+sym;
 function fmtLinComb(k,l){ const a = fmtCoefTerm(k,'A'); const b = (l>=0? ' + ' : ' − ') + (Math.abs(l)===1? 'B' : Math.abs(l)+'B'); return a + b; }
 
 // ================== STATE ==================
-const LS_KEY = 'matrix_game_player_v3';
-let player = { title:'นาย', name:'', nickname:'', room:'', number:'' };
+const LS_KEY = 'matrix_game_player_v4';
+let player = { title:'นาย', firstName:'', lastName:'', nickname:'', room:'', number:'' };
 let questions = [];
 let currentIndex = 0;
 let seed = 0;
@@ -252,9 +256,10 @@ function renderQuestionBody(q){
 }
 
 function restorePlayer(){
-  try{ const raw = localStorage.getItem(LS_KEY); if(raw){ const obj = JSON.parse(raw); if(obj && obj.name){ player = obj; } } }catch(e){}
+  try{ const raw = localStorage.getItem(LS_KEY); if(raw){ const obj = JSON.parse(raw); if(obj && obj.firstName){ player = obj; } } }catch(e){}
   document.getElementById('title').value = player.title || 'นาย';
-  document.getElementById('name').value = player.name || '';
+  document.getElementById('firstName').value = player.firstName || '';
+  document.getElementById('lastName').value = player.lastName || '';
   document.getElementById('nickname').value = player.nickname || '';
   document.getElementById('room').value = player.room || '';
   document.getElementById('number').value = player.number || '';
@@ -346,12 +351,14 @@ function refreshSubmitState(){
 // ================== GAME FLOW ==================
 startBtn.addEventListener('click', ()=>{
   const title = document.getElementById('title').value.trim();
-  const name  = document.getElementById('name').value.trim();
+  const firstName = document.getElementById('firstName').value.trim();
+  const lastName = document.getElementById('lastName').value.trim();
   const nickname = document.getElementById('nickname').value.trim();
   const room  = document.getElementById('room').value.trim();
   const number= document.getElementById('number').value.trim();
-  if(!name){ alert('กรุณากรอก ชื่อ-สกุล'); return; }
-  player = { title, name, nickname, room, number }; savePlayer();
+  if(!firstName){ alert('กรุณากรอกชื่อจริง'); return; }
+  if(!lastName){ alert('กรุณากรอกนามสกุล'); return; }
+  player = { title, firstName, lastName, nickname, room, number }; savePlayer();
   seed = Date.now() % 1000000; generateAllQuestions(); enterQuiz();
 });
 backBtn.addEventListener('click', ()=>{ currentIndex = clamp(currentIndex-1,0,9); renderQuestion(); updateNavState(); });
@@ -366,7 +373,7 @@ backToHome.addEventListener('click', ()=>{ show(loginView); });
 
 function enterQuiz(){
   const nickText = player.nickname ? ` • ชื่อเล่น: ${player.nickname}` : '';
-  studentTag.textContent = `นักเรียน: ${player.title} ${player.name} ${player.room? '('+player.room+')':''} ${player.number? '#'+player.number:''}${nickText}`;
+  studentTag.textContent = `นักเรียน: ${player.title} ${player.firstName} ${player.lastName} ${player.room? '('+player.room+')':''} ${player.number? '#'+player.number:''}${nickText}`;
   seedTag.textContent = `ชุดโจทย์: ${seed}`;
   currentIndex = 0; show(quizView); renderQuestion(); setupNav(); refreshSubmitState();
 }
@@ -427,7 +434,8 @@ async function sendToSheet({score,total,detail}){
   const payload = {
     game: 'MatrixGame',
     title: player.title,
-    name: player.name,
+    firstName: player.firstName,
+    lastName: player.lastName,
     nickname: player.nickname,
     room: player.room,
     number: player.number,
@@ -453,12 +461,7 @@ async function sendToSheet({score,total,detail}){
     if (ok) { sheetMsg.innerHTML = '<span class="ok">ส่งคะแนนไปยัง Google Sheet แล้ว</span>'; return; }
     throw new Error('Non-OK response');
   } catch (err) {
-    try {
-      await fetch(GAS_URL, { method:'POST', mode:'no-cors', body: form, keepalive:true, credentials:'omit' });
-      sheetMsg.innerHTML = '<span class="ok">ส่งคะแนนแล้ว</span>';
-    } catch (e2) {
-      sheetMsg.innerHTML = '<span class="warn">ส่งคะแนนไม่สำเร็จ กรุณาลองใหม่</span>';
-    }
+    sheetMsg.innerHTML = '<span class="warn">ส่งคะแนนไม่สำเร็จ กรุณาลองใหม่</span>';
   }
 }
 
