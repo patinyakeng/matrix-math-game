@@ -398,7 +398,7 @@ function gradeAll(){
   return { score, total:questions.length, detail };
 }
 
-/* เฉลยแบบ “โจทย์เต็ม + คำตอบสีไฮไลต์” */
+/* เฉลยแบบ “โจทย์เต็ม + คำตอบนักเรียน + คำตอบที่ถูกต้อง” */
 function showEnd({score,total,detail}){
   show(endView);
   scoreLine.textContent = `คะแนนรวม: ${score} / ${total}`;
@@ -412,11 +412,19 @@ function showEnd({score,total,detail}){
               </div>`;
     html += `<div class="small" style="margin-top:6px"><b>โจทย์:</b> ${q.prompt}</div>`;
     html += renderQuestionBody(q);
-    html += `<div class="small" style="margin-top:8px">คำตอบ:</div>`;
+
+    html += `<div class="small" style="margin-top:10px"><b>คำตอบของนักเรียน:</b></div>`;
+    if(q.kind==='matrix'){
+      html += `<div class="answer" style="border-color:${d.correct?'var(--good)':'var(--bad)'};background:${d.correct?'#ecfdf5':'#fef2f2'}">${fmtMatrixHTML(q.userAnswer)}</div>`;
+    }else{
+      html += `<div class="answer answer-num" style="border-color:${d.correct?'var(--good)':'var(--bad)'};background:${d.correct?'#ecfdf5':'#fef2f2'}">${d.userAnswer}</div>`;
+    }
+
+    html += `<div class="small" style="margin-top:10px"><b>คำตอบที่ถูกต้อง:</b></div>`;
     if(q.kind==='matrix'){
       html += `<div class="answer">${fmtMatrixHTML(q.answer)}</div>`;
     }else{
-      html += `<div class="answer answer-num">${q.answer}</div>`;
+      html += `<div class="answer answer-num">${d.correctAnswer}</div>`;
     }
     card.innerHTML=html; answersList.appendChild(card);
   }
