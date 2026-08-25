@@ -145,7 +145,28 @@ Author: Alex (for Patinya/Tin)
     <div class="row">
       <div class="col">
         <label for="room">ห้อง</label>
-        <input id="room" type="text" placeholder="เช่น ม.4/3" />
+        <select id="room">
+          <option value="">เลือกห้อง</option>
+          <option value="4/1">4/1</option>
+          <option value="4/2">4/2</option>
+          <option value="4/3">4/3</option>
+          <option value="4/4">4/4</option>
+          <option value="4/5">4/5</option>
+          <option value="4/6">4/6</option>
+          <option value="4/7">4/7</option>
+          <option value="4/8">4/8</option>
+          <option value="4/9">4/9</option>
+          <option value="4/10">4/10</option>
+          <option value="4/11">4/11</option>
+          <option value="4/12">4/12</option>
+          <option value="4/13">4/13</option>
+          <option value="4/14">4/14</option>
+          <option value="4/15">4/15</option>
+          <option value="4/16">4/16</option>
+          <option value="4/17">4/17</option>
+          <option value="4/18">4/18</option>
+          <option value="4/19">4/19</option>
+        </select>
       </div>
       <div class="col" style="max-width:180px">
         <label for="number">เลขที่</label>
@@ -391,6 +412,7 @@ startBtn.addEventListener('click', ()=>{
   const number= document.getElementById('number').value.trim();
   if(!firstName){ alert('กรุณากรอกชื่อจริง'); return; }
   if(!lastName){ alert('กรุณากรอกนามสกุล'); return; }
+  if(!room){ alert('กรุณาเลือกห้อง'); return; }
   player = { title, firstName, lastName, nickname, room, number }; savePlayer();
   seed = Date.now() % 1000000; generateAllQuestions(); enterQuiz();
 });
