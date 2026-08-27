@@ -245,6 +245,10 @@ function fmtAnswerMatrixAsText(M){ return '['+M.map(r=>'['+r.join(', ')+']').joi
 function randCoefNZ(){ const opts = [-3,-2,-1,1,2,3]; return opts[randInt(0, opts.length-1)]; }
 function fmtCoefTerm(k, sym){ if(k===1) return sym; if(k===-1) return '−'+sym; return (k<0? '−'+Math.abs(k): String(k)) + sym; }
 function fmtLinComb(k,l){ const a = fmtCoefTerm(k,'A'); const b = (l>=0? ' + ' : ' − ') + (Math.abs(l)===1? 'B' : Math.abs(l)+'B'); return a + b; }
+function normalizeIntegerDraft(value){
+  return String(value ?? '').replace(/[−–—]/g,'-').trim();
+}
+function isIntegerAnswer(value){ return /^-?\d+$/.test(String(value)); }
 
 // ================== STATE ==================
 const LS_KEY = 'matrix_game_player_v4';
@@ -333,11 +337,11 @@ function setupNav(){
 function updateNavState(){
   const kids = Array.from(navGrid.children);
   kids.forEach((btn,idx)=>{ btn.classList.remove('current','answered'); if(idx===currentIndex) btn.classList.add('current');
-    const q=questions[idx]; const done = q.kind==='matrix' ? matrixFilled(q.userAnswer) : (q.userAnswer!=='' && q.userAnswer!==null);
+    const q=questions[idx]; const done = q.kind==='matrix' ? matrixFilled(q.userAnswer) : isIntegerAnswer(q.userAnswer);
     if(done) btn.classList.add('answered');
   });
 }
-function matrixFilled(M){ for(let i=0;i<M.length;i++) for(let j=0;j<M[0].length;j++){ if(M[i][j]===''||M[i][j]===null) return false; } return true; }
+function matrixFilled(M){ for(let i=0;i<M.length;i++) for(let j=0;j<M[0].length;j++){ if(!isIntegerAnswer(M[i][j])) return false; } return true; }
 
 function renderQuestion(){
   const q = questions[currentIndex];
@@ -368,7 +372,7 @@ function renderMatrixInputs(q){
   let html = `<div class="grid-input" style="grid-template-columns: repeat(${c}, minmax(42px, 72px));">`;
   for(let i=0;i<r;i++) for(let j=0;j<c;j++){
     const val = q.userAnswer[i][j]!==''? q.userAnswer[i][j] : '';
-    html += `<input type="number" class="minput" data-i="${i}" data-j="${j}" value="${val}" />`;
+    html += `<input type="text" inputmode="text" autocomplete="off" spellcheck="false" class="minput" data-i="${i}" data-j="${j}" value="${val}" />`;
   }
   return html + '</div>';
 }
@@ -376,21 +380,25 @@ function attachMatrixInputHandlers(q){
   problemArea.querySelectorAll('input.minput').forEach(inp=>{
     inp.addEventListener('input', ()=>{
       const i=Number(inp.getAttribute('data-i')), j=Number(inp.getAttribute('data-j'));
-      q.userAnswer[i][j]=inp.value; refreshSubmitState(); updateNavState();
+      const value=normalizeIntegerDraft(inp.value); inp.value=value;
+      q.userAnswer[i][j]=value; refreshSubmitState(); updateNavState();
     });
   });
 }
 function renderNumberInput(q){
   const v=(q.userAnswer!=='' && q.userAnswer!==null)? q.userAnswer:'';
-  return `<input type="number" id="ninput" placeholder="พิมพ์คำตอบเป็นจำนวนเต็ม" value="${v}" />`;
+  return `<input type="text" inputmode="text" autocomplete="off" spellcheck="false" id="ninput" placeholder="พิมพ์คำตอบเป็นจำนวนเต็ม" value="${v}" />`;
 }
 function renderSolveXInput(q){
   const v=(q.userAnswer!=='' && q.userAnswer!==null)? q.userAnswer:'';
-  return `<input type="number" id="ninput" placeholder="ค่า x" value="${v}" />`;
+  return `<input type="text" inputmode="text" autocomplete="off" spellcheck="false" id="ninput" placeholder="ค่า x" value="${v}" />`;
 }
 function attachNumberHandler(q){
   const inp=document.getElementById('ninput');
-  inp.addEventListener('input', ()=>{ q.userAnswer = inp.value; refreshSubmitState(); updateNavState(); });
+  inp.addEventListener('input', ()=>{
+    const value=normalizeIntegerDraft(inp.value); inp.value=value;
+    q.userAnswer=value; refreshSubmitState(); updateNavState();
+  });
 }
 function clearCurrentAnswer(){
   const q=questions[currentIndex];
@@ -398,7 +406,7 @@ function clearCurrentAnswer(){
   else q.userAnswer='';
 }
 function refreshSubmitState(){
-  const allDone = questions.every(q=> q.kind==='matrix' ? matrixFilled(q.userAnswer) : (q.userAnswer!=='' && q.userAnswer!==null) );
+  const allDone = questions.every(q=> q.kind==='matrix' ? matrixFilled(q.userAnswer) : isIntegerAnswer(q.userAnswer));
   submitBtn.disabled=!allDone;
 }
 
